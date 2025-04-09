@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, User, Mail, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Mail, Eye, EyeOff, Database } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Auth: React.FC = () => {
-  const { user, signIn, signUp, isLoading } = useAuth();
+  const { user, signIn, signUp, isLoading, isSupabaseConnected } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -60,6 +61,17 @@ const Auth: React.FC = () => {
           <p className="text-sm text-gray-500 mt-2">Secure file sharing platform</p>
         </div>
 
+        {!isSupabaseConnected && (
+          <Alert className="mb-6 border-amber-500">
+            <Database className="h-4 w-4" />
+            <AlertTitle>Supabase Not Connected</AlertTitle>
+            <AlertDescription>
+              Please connect to Supabase via the integration button in the top right corner.
+              Authentication will not work until this is set up.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid grid-cols-2 mb-6">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -81,6 +93,7 @@ const Auth: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={!isSupabaseConnected}
                     />
                   </div>
                 </div>
@@ -96,6 +109,7 @@ const Auth: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      disabled={!isSupabaseConnected}
                     />
                     <Button
                       type="button"
@@ -103,6 +117,7 @@ const Auth: React.FC = () => {
                       size="icon"
                       className="absolute right-0 top-0 h-full px-3"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={!isSupabaseConnected}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4 text-gray-400" />
@@ -115,7 +130,7 @@ const Auth: React.FC = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-fileflow-600 hover:bg-fileflow-700"
-                  disabled={authLoading}
+                  disabled={authLoading || !isSupabaseConnected}
                 >
                   {authLoading ? "Signing in..." : "Sign In"}
                 </Button>
@@ -138,6 +153,7 @@ const Auth: React.FC = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
+                      disabled={!isSupabaseConnected}
                     />
                   </div>
                 </div>
@@ -153,6 +169,7 @@ const Auth: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={!isSupabaseConnected}
                     />
                   </div>
                 </div>
@@ -168,6 +185,7 @@ const Auth: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      disabled={!isSupabaseConnected}
                     />
                     <Button
                       type="button"
@@ -175,6 +193,7 @@ const Auth: React.FC = () => {
                       size="icon"
                       className="absolute right-0 top-0 h-full px-3"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={!isSupabaseConnected}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4 text-gray-400" />
@@ -187,7 +206,7 @@ const Auth: React.FC = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-fileflow-600 hover:bg-fileflow-700"
-                  disabled={authLoading}
+                  disabled={authLoading || !isSupabaseConnected}
                 >
                   {authLoading ? "Signing up..." : "Sign Up"}
                 </Button>

@@ -12,9 +12,15 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  isSupabaseConnected: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Check if Supabase is properly connected
+const isSupabaseConnected = () => {
+  return import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+};
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -22,8 +28,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [profile, setProfile] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const supabaseConnected = isSupabaseConnected();
 
   useEffect(() => {
+    if (!supabaseConnected) {
+      setIsLoading(false);
+      return;
+    }
+
     const getSession = async () => {
       setIsLoading(true);
       
@@ -84,9 +96,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [supabaseConnected]);
 
   const signIn = async (email: string, password: string) => {
+    if (!supabaseConnected) {
+      toast({
+        title: "Connection Error",
+        description: "Supabase is not connected. Please connect via the Supabase integration first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
@@ -110,6 +131,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    if (!supabaseConnected) {
+      toast({
+        title: "Connection Error",
+        description: "Supabase is not connected. Please connect via the Supabase integration first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data: { user }, error } = await supabase.auth.signUp({ 
         email, 
@@ -152,6 +182,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signOut = async () => {
+    if (!supabaseConnected) {
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signOut();
       
@@ -184,6 +218,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         signIn,
         signUp,
         signOut,
+        isSupabaseConnected: supabaseConnected,
       }}
     >
       {children}

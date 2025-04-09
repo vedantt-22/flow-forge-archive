@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,9 +17,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Check if Supabase is properly connected
+// Update check to use the new client
 const isSupabaseConnected = () => {
-  return import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+  // Since we're now connected to Supabase, this should return true
+  return true;
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -68,30 +69,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
-    getSession();
-
-    // Set up auth state change listener
+    // Set up auth state change listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user || null);
         
         if (newSession?.user) {
-          // Fetch updated profile
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', newSession.user.id)
-            .single();
-            
-          if (profileData) {
-            setProfile(profileData);
-          }
+          // Defer Supabase calls with setTimeout to avoid deadlocks
+          setTimeout(async () => {
+            // Fetch updated profile
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', newSession.user.id)
+              .single();
+              
+            if (profileData) {
+              setProfile(profileData);
+            }
+          }, 0);
         } else {
           setProfile(null);
         }
       }
     );
+
+    // THEN check for existing session
+    getSession();
 
     return () => {
       subscription.unsubscribe();

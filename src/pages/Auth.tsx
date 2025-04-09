@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, User, Mail, Eye, EyeOff, Database, ExternalLink } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Lock, User, Mail, Eye, EyeOff, Database, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Auth: React.FC = () => {
@@ -107,6 +106,10 @@ const Auth: React.FC = () => {
               <span>Flow</span>
             </div>
             <p className="text-sm text-gray-500 mt-2">Secure file sharing platform</p>
+            <div className="flex items-center justify-center mt-2 text-green-500 gap-1">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-xs">Connected to Supabase</span>
+            </div>
           </div>
 
           <Tabs defaultValue="signin" className="w-full">

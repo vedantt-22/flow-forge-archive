@@ -1,10 +1,36 @@
 
 import React from 'react';
-import { Search, User, Bell } from 'lucide-react';
+import { Search, User, Bell, LogOut } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from '@/context/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navbar: React.FC = () => {
+  const { user, profile, signOut } = useAuth();
+  
+  const handleSignOut = async () => {
+    await signOut();
+  };
+  
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   return (
     <nav className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="flex items-center">
@@ -35,13 +61,33 @@ const Navbar: React.FC = () => {
           <span className="absolute top-0 right-0 w-2 h-2 bg-fileflow-500 rounded-full"></span>
         </Button>
         
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <User className="h-5 w-5" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+              {profile?.avatar_url ? (
+                <Avatar>
+                  <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                  <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                </Avatar>
+              ) : (
+                <User className="h-5 w-5" />
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>
+              {profile?.full_name || user?.email}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </nav>
   );

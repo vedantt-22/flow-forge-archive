@@ -2,18 +2,24 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Default to empty strings if environment variables aren't available yet
+// This allows the app to at least load in development
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase URL and anonymous key must be provided. Please connect to Supabase via the integration.');
+// Check if we have actual values before creating client
+const hasSupabaseCredentials = supabaseUrl && supabaseAnonKey;
+
+if (!hasSupabaseCredentials) {
+  console.warn('Supabase URL and anonymous key are missing. Some features will be unavailable until you connect to Supabase via the integration.');
 }
 
-export const supabase = createClient<Database>(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-);
+// Create a mock supabase client if credentials are missing
+export const supabase = hasSupabaseCredentials 
+  ? createClient<Database>(supabaseUrl, supabaseAnonKey)
+  : createClient<Database>('https://placeholder-url.supabase.co', 'placeholder-key');
 
+// Export your type definitions
 export type FileRecord = {
   id: string;
   name: string;

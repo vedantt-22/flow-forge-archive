@@ -39,7 +39,7 @@ const FileUploadZone: React.FC = () => {
     }
   };
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -50,40 +50,26 @@ const FileUploadZone: React.FC = () => {
         
         if (newProgress >= 100) {
           clearInterval(interval);
-          setTimeout(() => {
-            setIsUploading(false);
-            
-            // Create new file object
-            const newFile = {
-              id: Date.now().toString(),
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              modified: new Date(),
-              creator: 'You',
-              versions: [
-                {
-                  id: 'v1',
-                  number: 1,
-                  date: new Date(),
-                  author: 'You',
-                  changes: 'Initial upload',
-                },
-              ],
-              isEncrypted: true,
-              shared: false,
-              favorite: false,
-              tags: [],
-            };
-            
-            uploadFile(newFile);
-            
-            toast({
-              title: "File uploaded successfully",
-              description: `${file.name} has been added to your files`,
-              variant: "default",
+          // Actual upload happens here
+          uploadFile(file)
+            .then(() => {
+              setTimeout(() => {
+                setIsUploading(false);
+                toast({
+                  title: "File uploaded successfully",
+                  description: `${file.name} has been added to your files`,
+                  variant: "default",
+                });
+              }, 500);
+            })
+            .catch(error => {
+              setIsUploading(false);
+              toast({
+                title: "Upload failed",
+                description: error.message || "An error occurred during upload",
+                variant: "destructive",
+              });
             });
-          }, 500);
         }
         
         return newProgress;
@@ -120,7 +106,7 @@ const FileUploadZone: React.FC = () => {
           <Upload className="upload-icon h-12 w-12 mb-4 text-gray-400" />
           <h3 className="text-lg font-medium mb-2">Drop files to upload</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-sm">
-            Drop files here or click to browse from your computer. Files are encrypted during upload.
+            Drop files here or click to browse from your computer.
           </p>
           
           <label htmlFor="file-upload">

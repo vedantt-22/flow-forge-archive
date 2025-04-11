@@ -1,132 +1,68 @@
 
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import { loginUser, registerUser, getUserById, verifyToken } from '@/lib/auth-service';
+import { UserDocument } from '@/lib/mongodb';
 
 interface AuthContextType {
-  session: Session | null;
-  user: User | null;
-  profile: any | null;
+  user: UserDocument | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
-  isSupabaseConnected: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Update check to use the new client
-const isSupabaseConnected = () => {
-  // Since we're now connected to Supabase, this should return true
-  return true;
-};
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [user, setUser] = useState<UserDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const supabaseConnected = isSupabaseConnected();
 
   useEffect(() => {
-    if (!supabaseConnected) {
-      setIsLoading(false);
-      return;
-    }
-
-    const getSession = async () => {
+    const checkAuth = async () => {
       setIsLoading(true);
       
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          throw error;
+        // Check for token in localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsLoading(false);
+          return;
         }
         
-        if (session) {
-          setSession(session);
-          setUser(session.user);
-          
-          try {
-            // Fetch user profile
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-              
-            if (!profileError && profileData) {
-              setProfile(profileData);
-            }
-          } catch (profileErr) {
-            console.error('Error fetching profile:', profileErr);
-          }
+        // Verify token
+        const { userId } = verifyToken(token);
+        
+        // Get user data
+        const userData = await getUserById(userId);
+        if (userData) {
+          setUser(userData);
+        } else {
+          // Invalid user ID or user not found, clear token
+          localStorage.removeItem('token');
         }
       } catch (error) {
-        console.error('Error getting session:', error);
+        // Invalid token, clear it
+        localStorage.removeItem('token');
+        console.error('Auth check error:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Set up auth state change listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user || null);
-        
-        if (newSession?.user) {
-          // Defer Supabase calls with setTimeout to avoid deadlocks
-          setTimeout(async () => {
-            try {
-              // Fetch updated profile
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', newSession.user.id)
-                .single();
-                
-              if (profileData) {
-                setProfile(profileData);
-              }
-            } catch (err) {
-              console.error('Error fetching profile after auth change:', err);
-            }
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-      }
-    );
-
-    // THEN check for existing session
-    getSession();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabaseConnected]);
+    checkAuth();
+  }, []);
 
   const signIn = async (email: string, password: string) => {
-    if (!supabaseConnected) {
-      toast({
-        title: "Connection Error",
-        description: "Supabase is not connected. Please connect via the Supabase integration first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { user: userData, token } = await loginUser(email, password);
       
-      if (error) {
-        throw error;
-      }
+      // Store token
+      localStorage.setItem('token', token);
+      
+      // Set user
+      setUser(userData);
       
       toast({
         title: "Success",
@@ -144,48 +80,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    if (!supabaseConnected) {
-      toast({
-        title: "Connection Error",
-        description: "Supabase is not connected. Please connect via the Supabase integration first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      const { data: { user }, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          }
-        }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (user) {
-        try {
-          // Create profile entry
-          await supabase.from('profiles').insert({
-            id: user.id,
-            email: user.email!,
-            full_name: fullName,
-            avatar_url: null,
-            updated_at: new Date().toISOString(),
-          });
-        } catch (profileErr) {
-          console.error('Error creating profile:', profileErr);
-        }
-      }
+      await registerUser(email, password, fullName);
       
       toast({
         title: "Account created",
-        description: "Please verify your email to log in",
+        description: "Please sign in with your new account",
         variant: "default",
       });
     } catch (error: any) {
@@ -199,16 +99,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signOut = async () => {
-    if (!supabaseConnected) {
-      return;
-    }
-
     try {
-      const { error } = await supabase.auth.signOut();
+      // Clear token
+      localStorage.removeItem('token');
       
-      if (error) {
-        throw error;
-      }
+      // Clear user
+      setUser(null);
       
       toast({
         title: "Signed out successfully",
@@ -228,14 +124,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <AuthContext.Provider
       value={{
-        session,
         user,
-        profile,
         isLoading,
         signIn,
         signUp,
         signOut,
-        isSupabaseConnected: supabaseConnected,
       }}
     >
       {children}

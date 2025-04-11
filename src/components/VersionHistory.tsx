@@ -21,7 +21,7 @@ const formatDate = (date: Date): string => {
 
 const VersionHistory: React.FC<VersionHistoryProps> = ({ versions, fileName }) => {
   // Sort versions by number in descending order
-  const sortedVersions = [...versions].sort((a, b) => b.number - a.number);
+  const sortedVersions = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
   
   return (
     <div>
@@ -47,14 +47,14 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ versions, fileName }) =
             )}
             
             <div className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-fileflow-100 text-fileflow-600 dark:bg-fileflow-900/30 dark:text-fileflow-400 mr-4">
-              <span className="text-xs font-medium">v{version.number}</span>
+              <span className="text-xs font-medium">v{version.versionNumber}</span>
             </div>
             
             <div className="flex-1 min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h4 className="text-sm font-medium">
-                    {index === 0 ? 'Current Version' : `Version ${version.number}`}
+                    {index === 0 ? 'Current Version' : `Version ${version.versionNumber}`}
                   </h4>
                   <div className="mt-1 text-xs text-gray-500">
                     {formatDate(version.date)} by {version.author}

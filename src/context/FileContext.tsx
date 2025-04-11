@@ -1,5 +1,13 @@
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+
+// Define the version type
+export interface VersionType {
+  id: string;
+  versionNumber: number;
+  date: Date;
+  author: string;
+  changes: string;
+}
 
 // Define the file type
 export interface FileType {
@@ -12,13 +20,7 @@ export interface FileType {
   favorite: boolean;
   shared: boolean;
   tags: string[];
-  versions: {
-    id: string;
-    versionNumber: number;
-    createdAt: Date;
-    createdBy: string;
-    changes: string;
-  }[];
+  versions: VersionType[];
 }
 
 // Define the file context type
@@ -28,6 +30,7 @@ interface FileContextType {
   selectFile: (file: FileType | null) => void;
   toggleFavorite: (id: string) => void;
   deleteFile: (id: string) => void;
+  uploadFile: (file: File) => Promise<void>;
 }
 
 // Create the context
@@ -144,6 +147,43 @@ export const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const uploadFile = async (file: File): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      try {
+        // Create a new file object
+        const newFile: FileType = {
+          id: `file-${Date.now()}`,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          modified: new Date(),
+          creator: "Current User",
+          favorite: false,
+          shared: false,
+          tags: [],
+          versions: [
+            {
+              id: `v-${Date.now()}`,
+              versionNumber: 1,
+              date: new Date(),
+              author: "Current User",
+              changes: "Initial upload"
+            }
+          ]
+        };
+
+        // Add the new file to the files array
+        setFiles(prevFiles => [newFile, ...prevFiles]);
+        
+        // If we're running with MongoDB in the future, we would do the actual file upload here
+        
+        resolve();
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error('Unknown error during upload'));
+      }
+    });
+  };
+
   return (
     <FileContext.Provider
       value={{
@@ -151,7 +191,8 @@ export const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         selectedFile,
         selectFile,
         toggleFavorite,
-        deleteFile
+        deleteFile,
+        uploadFile
       }}
     >
       {children}

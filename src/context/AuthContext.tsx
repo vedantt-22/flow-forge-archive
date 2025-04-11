@@ -51,15 +51,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setSession(session);
           setUser(session.user);
           
-          // Fetch user profile
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (!profileError && profileData) {
-            setProfile(profileData);
+          try {
+            // Fetch user profile
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (!profileError && profileData) {
+              setProfile(profileData);
+            }
+          } catch (profileErr) {
+            console.error('Error fetching profile:', profileErr);
           }
         }
       } catch (error) {
@@ -78,15 +82,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (newSession?.user) {
           // Defer Supabase calls with setTimeout to avoid deadlocks
           setTimeout(async () => {
-            // Fetch updated profile
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', newSession.user.id)
-              .single();
-              
-            if (profileData) {
-              setProfile(profileData);
+            try {
+              // Fetch updated profile
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', newSession.user.id)
+                .single();
+                
+              if (profileData) {
+                setProfile(profileData);
+              }
+            } catch (err) {
+              console.error('Error fetching profile after auth change:', err);
             }
           }, 0);
         } else {
@@ -161,14 +169,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       if (user) {
-        // Create profile entry
-        await supabase.from('profiles').insert({
-          id: user.id,
-          email: user.email!,
-          full_name: fullName,
-          avatar_url: null,
-          updated_at: new Date().toISOString(),
-        });
+        try {
+          // Create profile entry
+          await supabase.from('profiles').insert({
+            id: user.id,
+            email: user.email!,
+            full_name: fullName,
+            avatar_url: null,
+            updated_at: new Date().toISOString(),
+          });
+        } catch (profileErr) {
+          console.error('Error creating profile:', profileErr);
+        }
       }
       
       toast({

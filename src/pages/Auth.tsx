@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -6,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, User, Mail, Eye, EyeOff, Database, CheckCircle } from 'lucide-react';
+import { Lock, User, Mail, Eye, EyeOff, Database, CheckCircle, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const Auth: React.FC = () => {
   const { user, signIn, signUp, isLoading, isSupabaseConnected } = useAuth();
@@ -17,7 +17,6 @@ const Auth: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Redirect if already logged in
   if (user) {
     return <Navigate to="/" replace />;
   }

@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
 // Define the version type
@@ -49,8 +50,8 @@ const sampleFiles: FileType[] = [
     shared: true,
     tags: ["work", "proposal"],
     versions: [
-      { id: "v1", versionNumber: 2, createdAt: new Date('2025-04-01T10:30:00'), createdBy: "John Doe", changes: "Updated financial projections" },
-      { id: "v2", versionNumber: 1, createdAt: new Date('2025-03-28T15:20:00'), createdBy: "John Doe", changes: "Initial draft" }
+      { id: "v1", versionNumber: 2, date: new Date('2025-04-01T10:30:00'), author: "John Doe", changes: "Updated financial projections" },
+      { id: "v2", versionNumber: 1, date: new Date('2025-03-28T15:20:00'), author: "John Doe", changes: "Initial draft" }
     ]
   },
   {
@@ -64,7 +65,7 @@ const sampleFiles: FileType[] = [
     shared: false,
     tags: ["personal", "vacation"],
     versions: [
-      { id: "v3", versionNumber: 1, createdAt: new Date('2025-03-29T14:15:00'), createdBy: "John Doe", changes: "Original upload" }
+      { id: "v3", versionNumber: 1, date: new Date('2025-03-29T14:15:00'), author: "John Doe", changes: "Original upload" }
     ]
   },
   {
@@ -78,9 +79,9 @@ const sampleFiles: FileType[] = [
     shared: true,
     tags: ["work", "report", "finance"],
     versions: [
-      { id: "v4", versionNumber: 3, createdAt: new Date('2025-03-25T09:45:00'), createdBy: "Jane Smith", changes: "Final review changes" },
-      { id: "v5", versionNumber: 2, createdAt: new Date('2025-03-24T16:30:00'), createdBy: "John Doe", changes: "Added executive summary" },
-      { id: "v6", versionNumber: 1, createdAt: new Date('2025-03-23T11:20:00'), createdBy: "John Doe", changes: "Initial draft" }
+      { id: "v4", versionNumber: 3, date: new Date('2025-03-25T09:45:00'), author: "Jane Smith", changes: "Final review changes" },
+      { id: "v5", versionNumber: 2, date: new Date('2025-03-24T16:30:00'), author: "John Doe", changes: "Added executive summary" },
+      { id: "v6", versionNumber: 1, date: new Date('2025-03-23T11:20:00'), author: "John Doe", changes: "Initial draft" }
     ]
   },
   {
@@ -94,7 +95,7 @@ const sampleFiles: FileType[] = [
     shared: true,
     tags: ["marketing", "brochure"],
     versions: [
-      { id: "v7", versionNumber: 1, createdAt: new Date('2025-03-22T13:10:00'), createdBy: "Jane Smith", changes: "Initial upload" }
+      { id: "v7", versionNumber: 1, date: new Date('2025-03-22T13:10:00'), author: "Jane Smith", changes: "Initial upload" }
     ]
   },
   {
@@ -108,8 +109,8 @@ const sampleFiles: FileType[] = [
     shared: false,
     tags: ["work", "client", "data"],
     versions: [
-      { id: "v8", versionNumber: 2, createdAt: new Date('2025-03-20T11:05:00'), createdBy: "John Doe", changes: "Updated client contact information" },
-      { id: "v9", versionNumber: 1, createdAt: new Date('2025-03-19T09:30:00'), createdBy: "John Doe", changes: "Initial data entry" }
+      { id: "v8", versionNumber: 2, date: new Date('2025-03-20T11:05:00'), author: "John Doe", changes: "Updated client contact information" },
+      { id: "v9", versionNumber: 1, date: new Date('2025-03-19T09:30:00'), author: "John Doe", changes: "Initial data entry" }
     ]
   }
 ];

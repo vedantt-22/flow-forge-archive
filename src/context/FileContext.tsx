@@ -1,231 +1,157 @@
 
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { useAuth } from './AuthContext';
-import { 
-  getFilesByUserId, 
-  getFileById, 
-  getFileVersions, 
-  uploadFile, 
-  addFileVersion, 
-  toggleFileFavorite, 
-  deleteFile 
-} from '@/lib/file-service';
-import { FileDocument, VersionDocument } from '@/lib/mongodb';
+import React, { createContext, useState, useContext, ReactNode } from 'react';
 
-export type FileType = {
+// Define the file type
+export interface FileType {
   id: string;
   name: string;
   size: number;
   type: string;
   modified: Date;
   creator: string;
-  versions: VersionType[];
-  shared: boolean;
   favorite: boolean;
+  shared: boolean;
   tags: string[];
-};
+  versions: {
+    id: string;
+    versionNumber: number;
+    createdAt: Date;
+    createdBy: string;
+    changes: string;
+  }[];
+}
 
-export type VersionType = {
-  id: string;
-  number: number;
-  date: Date;
-  author: string;
-  changes: string;
-};
-
+// Define the file context type
 interface FileContextType {
   files: FileType[];
   selectedFile: FileType | null;
   selectFile: (file: FileType | null) => void;
-  uploadFile: (file: File) => Promise<void>;
-  deleteFile: (id: string) => Promise<void>;
-  toggleFavorite: (id: string) => Promise<void>;
-  addVersion: (fileId: string, fileContent: File, changes: string) => Promise<void>;
-  isLoading: boolean;
+  toggleFavorite: (id: string) => void;
+  deleteFile: (id: string) => void;
 }
 
+// Create the context
 const FileContext = createContext<FileContextType | undefined>(undefined);
 
-// Helper function to convert MongoDB documents to our app's FileType
-const convertToFileType = (file: FileDocument, versions: VersionDocument[] = []): FileType => {
-  return {
-    id: file._id || '',
-    name: file.name,
-    size: file.size,
-    type: file.type,
-    modified: file.updatedAt,
-    creator: file.ownerId, // In a real app, you'd fetch the user's name
-    shared: file.shared,
-    favorite: file.favorite,
-    tags: file.tags,
-    versions: versions.map(v => ({
-      id: v._id || '',
-      number: v.versionNumber,
-      date: v.createdAt,
-      author: v.createdBy, // In a real app, you'd fetch the user's name
-      changes: v.changes,
-    })),
-  };
-};
+// Sample data
+const sampleFiles: FileType[] = [
+  {
+    id: "1",
+    name: "ProjectProposal.docx",
+    size: 1250000,
+    type: "application/msword",
+    modified: new Date('2025-04-01T10:30:00'),
+    creator: "John Doe",
+    favorite: true,
+    shared: true,
+    tags: ["work", "proposal"],
+    versions: [
+      { id: "v1", versionNumber: 2, createdAt: new Date('2025-04-01T10:30:00'), createdBy: "John Doe", changes: "Updated financial projections" },
+      { id: "v2", versionNumber: 1, createdAt: new Date('2025-03-28T15:20:00'), createdBy: "John Doe", changes: "Initial draft" }
+    ]
+  },
+  {
+    id: "2",
+    name: "Vacation_Photo.jpg",
+    size: 3450000,
+    type: "image/jpeg",
+    modified: new Date('2025-03-29T14:15:00'),
+    creator: "John Doe",
+    favorite: false,
+    shared: false,
+    tags: ["personal", "vacation"],
+    versions: [
+      { id: "v3", versionNumber: 1, createdAt: new Date('2025-03-29T14:15:00'), createdBy: "John Doe", changes: "Original upload" }
+    ]
+  },
+  {
+    id: "3",
+    name: "QuarterlyReport.pdf",
+    size: 5250000,
+    type: "application/pdf",
+    modified: new Date('2025-03-25T09:45:00'),
+    creator: "Jane Smith",
+    favorite: true,
+    shared: true,
+    tags: ["work", "report", "finance"],
+    versions: [
+      { id: "v4", versionNumber: 3, createdAt: new Date('2025-03-25T09:45:00'), createdBy: "Jane Smith", changes: "Final review changes" },
+      { id: "v5", versionNumber: 2, createdAt: new Date('2025-03-24T16:30:00'), createdBy: "John Doe", changes: "Added executive summary" },
+      { id: "v6", versionNumber: 1, createdAt: new Date('2025-03-23T11:20:00'), createdBy: "John Doe", changes: "Initial draft" }
+    ]
+  },
+  {
+    id: "4",
+    name: "CompanyBrochure.pdf",
+    size: 8750000,
+    type: "application/pdf",
+    modified: new Date('2025-03-22T13:10:00'),
+    creator: "Jane Smith",
+    favorite: false,
+    shared: true,
+    tags: ["marketing", "brochure"],
+    versions: [
+      { id: "v7", versionNumber: 1, createdAt: new Date('2025-03-22T13:10:00'), createdBy: "Jane Smith", changes: "Initial upload" }
+    ]
+  },
+  {
+    id: "5",
+    name: "ClientData.xlsx",
+    size: 2150000,
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    modified: new Date('2025-03-20T11:05:00'),
+    creator: "John Doe",
+    favorite: false,
+    shared: false,
+    tags: ["work", "client", "data"],
+    versions: [
+      { id: "v8", versionNumber: 2, createdAt: new Date('2025-03-20T11:05:00'), createdBy: "John Doe", changes: "Updated client contact information" },
+      { id: "v9", versionNumber: 1, createdAt: new Date('2025-03-19T09:30:00'), createdBy: "John Doe", changes: "Initial data entry" }
+    ]
+  }
+];
 
+// Create the provider
 export const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [files, setFiles] = useState<FileType[]>([]);
+  const [files, setFiles] = useState<FileType[]>(sampleFiles);
   const [selectedFile, setSelectedFile] = useState<FileType | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { user } = useAuth();
-
-  // Load user's files when user changes
-  useEffect(() => {
-    const loadFiles = async () => {
-      if (!user?._id) return;
-      
-      setIsLoading(true);
-      try {
-        // Get user's files
-        const userFiles = await getFilesByUserId(user._id);
-        
-        // Convert to app's FileType and load versions for each file
-        const filesWithVersions = await Promise.all(
-          userFiles.map(async (file) => {
-            const versions = await getFileVersions(file._id || '');
-            return convertToFileType(file, versions);
-          })
-        );
-        
-        setFiles(filesWithVersions);
-      } catch (error) {
-        console.error('Error loading files:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadFiles();
-  }, [user]);
 
   const selectFile = (file: FileType | null) => {
     setSelectedFile(file);
   };
 
-  const handleUploadFile = async (file: File) => {
-    if (!user?._id) return;
+  const toggleFavorite = (id: string) => {
+    setFiles(prevFiles => 
+      prevFiles.map(file => 
+        file.id === id 
+          ? { ...file, favorite: !file.favorite } 
+          : file
+      )
+    );
+
+    // Update selected file if it's the one being toggled
+    if (selectedFile && selectedFile.id === id) {
+      setSelectedFile({ ...selectedFile, favorite: !selectedFile.favorite });
+    }
+  };
+
+  const deleteFile = (id: string) => {
+    setFiles(prevFiles => prevFiles.filter(file => file.id !== id));
     
-    setIsLoading(true);
-    try {
-      // Read file content
-      const fileContent = await file.arrayBuffer();
-      
-      // Upload file
-      const newFile = await uploadFile({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        content: fileContent,
-        ownerId: user._id,
-      });
-      
-      // Get versions
-      const versions = await getFileVersions(newFile._id || '');
-      
-      // Convert to app's FileType
-      const fileWithVersions = convertToFileType(newFile, versions);
-      
-      // Add to files list
-      setFiles([...files, fileWithVersions]);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteFile = async (id: string) => {
-    setIsLoading(true);
-    try {
-      // Delete file
-      await deleteFile(id);
-      
-      // Remove from files list
-      setFiles(files.filter(file => file.id !== id));
-      
-      // Deselect if deleted
-      if (selectedFile && selectedFile.id === id) {
-        setSelectedFile(null);
-      }
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleToggleFavorite = async (id: string) => {
-    try {
-      // Toggle favorite
-      await toggleFileFavorite(id);
-      
-      // Update in files list
-      setFiles(files.map(file => 
-        file.id === id ? { ...file, favorite: !file.favorite } : file
-      ));
-      
-      // Update selected file if needed
-      if (selectedFile && selectedFile.id === id) {
-        setSelectedFile({ ...selectedFile, favorite: !selectedFile.favorite });
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      throw error;
-    }
-  };
-
-  const handleAddVersion = async (fileId: string, fileContent: File, changes: string) => {
-    if (!user?._id) return;
-    
-    setIsLoading(true);
-    try {
-      // Read file content
-      const content = await fileContent.arrayBuffer();
-      
-      // Add version
-      await addFileVersion(fileId, user._id, content, changes);
-      
-      // Get updated file and versions
-      const file = await getFileById(fileId);
-      const versions = await getFileVersions(fileId);
-      
-      if (file) {
-        const updatedFile = convertToFileType(file, versions);
-        
-        // Update in files list
-        setFiles(files.map(f => f.id === fileId ? updatedFile : f));
-        
-        // Update selected file if needed
-        if (selectedFile && selectedFile.id === fileId) {
-          setSelectedFile(updatedFile);
-        }
-      }
-    } catch (error) {
-      console.error('Error adding version:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
+    // Clear selected file if it's the one being deleted
+    if (selectedFile && selectedFile.id === id) {
+      setSelectedFile(null);
     }
   };
 
   return (
-    <FileContext.Provider 
-      value={{ 
-        files, 
-        selectedFile, 
-        selectFile, 
-        uploadFile: handleUploadFile, 
-        deleteFile: handleDeleteFile, 
-        toggleFavorite: handleToggleFavorite, 
-        addVersion: handleAddVersion,
-        isLoading 
+    <FileContext.Provider
+      value={{
+        files,
+        selectedFile,
+        selectFile,
+        toggleFavorite,
+        deleteFile
       }}
     >
       {children}
@@ -233,7 +159,8 @@ export const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-export const useFileContext = (): FileContextType => {
+// Create the hook
+export const useFileContext = () => {
   const context = useContext(FileContext);
   if (context === undefined) {
     throw new Error('useFileContext must be used within a FileProvider');

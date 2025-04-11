@@ -7,7 +7,6 @@ import {
   Download, 
   Share, 
   Trash, 
-  Lock, 
   File, 
   FileText, 
   Image, 
@@ -86,12 +85,6 @@ const FilePreview: React.FC = () => {
           <div className="flex-1">
             <div className="flex items-center">
               <h2 className="text-xl font-semibold">{selectedFile.name}</h2>
-              {selectedFile.isEncrypted && (
-                <div className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full flex items-center">
-                  <Lock className="h-3 w-3 mr-1" />
-                  Encrypted
-                </div>
-              )}
             </div>
             
             <div className="flex items-center mt-2 text-sm text-gray-500">
@@ -171,19 +164,6 @@ const FilePreview: React.FC = () => {
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-3">Security & Sharing</h3>
                 <div className="space-y-3">
-                  <div className="flex">
-                    <div className="w-1/3 text-sm text-gray-500">Encryption</div>
-                    <div className="w-2/3 text-sm">
-                      {selectedFile.isEncrypted ? (
-                        <span className="flex items-center text-green-600">
-                          <Lock className="h-4 w-4 mr-1" />
-                          Encrypted
-                        </span>
-                      ) : (
-                        <span className="text-yellow-600">Not encrypted</span>
-                      )}
-                    </div>
-                  </div>
                   <div className="flex">
                     <div className="w-1/3 text-sm text-gray-500">Sharing</div>
                     <div className="w-2/3 text-sm">

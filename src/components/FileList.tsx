@@ -8,7 +8,6 @@ import {
   FileText, 
   Image, 
   FileArchive,
-  Lock,
   Users,
   Calendar
 } from 'lucide-react';
@@ -74,9 +73,6 @@ const FileListItem: React.FC<{ file: FileType }> = ({ file }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center">
             <h3 className="text-sm font-medium truncate">{file.name}</h3>
-            {file.isEncrypted && (
-              <Lock className="ml-2 h-3 w-3 text-green-500" />
-            )}
           </div>
           <div className="flex items-center text-xs text-gray-500 mt-1">
             <span>{formatFileSize(file.size)}</span>

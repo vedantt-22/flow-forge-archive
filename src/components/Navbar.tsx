@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navbar: React.FC = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   
   const handleSignOut = async () => {
     await signOut();
@@ -64,10 +64,10 @@ const Navbar: React.FC = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-              {profile?.avatar_url ? (
+              {user?.avatarUrl ? (
                 <Avatar>
-                  <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                  <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+                  <AvatarImage src={user.avatarUrl} alt={user.fullName} />
+                  <AvatarFallback>{getInitials(user.fullName)}</AvatarFallback>
                 </Avatar>
               ) : (
                 <User className="h-5 w-5" />
@@ -76,7 +76,7 @@ const Navbar: React.FC = () => {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>
-              {profile?.full_name || user?.email}
+              {user?.fullName || user?.email}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile</DropdownMenuItem>

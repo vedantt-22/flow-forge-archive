@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, User, Mail, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const Auth: React.FC = () => {
   const { user, signIn, signUp, isLoading } = useAuth();
@@ -16,6 +17,8 @@ const Auth: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -24,9 +27,11 @@ const Auth: React.FC = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
+    setError(null);
     try {
       await signIn(email, password);
-    } catch (error) {
+    } catch (error: any) {
+      setError(error.message || 'Failed to sign in');
       console.error('Sign in error:', error);
     } finally {
       setAuthLoading(false);
@@ -36,9 +41,12 @@ const Auth: React.FC = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
+    setError(null);
     try {
       await signUp(email, password, fullName);
-    } catch (error) {
+      setSuccess('Account created successfully! Please sign in.');
+    } catch (error: any) {
+      setError(error.message || 'Failed to sign up');
       console.error('Sign up error:', error);
     } finally {
       setAuthLoading(false);
@@ -59,6 +67,22 @@ const Auth: React.FC = () => {
           </div>
           <p className="text-sm text-gray-500 mt-2">Secure file sharing platform</p>
         </div>
+
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{success}</AlertDescription>
+          </Alert>
+        )}
 
         <Tabs defaultValue="signin" className="w-full">
           <TabsList className="grid grid-cols-2 mb-6">

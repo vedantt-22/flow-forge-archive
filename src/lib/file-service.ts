@@ -1,6 +1,5 @@
 
 import { connectDB, collections, FileDocument, VersionDocument } from './mongodb';
-import { ObjectId } from 'mongodb';
 
 export const uploadFile = async (file: {
   name: string;
@@ -71,8 +70,8 @@ export const getFileById = async (fileId: string): Promise<FileDocument | null> 
   const db = await connectDB();
   const filesCollection = db.collection<FileDocument>(collections.files);
   
-  // Find file
-  const file = await filesCollection.findOne({ _id: new ObjectId(fileId) });
+  // Find file by string ID
+  const file = await filesCollection.findOne({ _id: fileId });
   return file;
 };
 
@@ -121,7 +120,7 @@ export const addFileVersion = async (
   
   // Update file's updatedAt
   await filesCollection.updateOne(
-    { _id: new ObjectId(fileId) },
+    { _id: fileId },
     { $set: { updatedAt: new Date() } }
   );
   
@@ -133,7 +132,7 @@ export const toggleFileFavorite = async (fileId: string): Promise<FileDocument |
   const filesCollection = db.collection<FileDocument>(collections.files);
   
   // Get current file
-  const file = await filesCollection.findOne({ _id: new ObjectId(fileId) });
+  const file = await filesCollection.findOne({ _id: fileId });
   if (!file) return null;
   
   // Toggle favorite
@@ -141,7 +140,7 @@ export const toggleFileFavorite = async (fileId: string): Promise<FileDocument |
   
   // Update file
   await filesCollection.updateOne(
-    { _id: new ObjectId(fileId) },
+    { _id: fileId },
     { $set: { favorite: newFavoriteStatus } }
   );
   
@@ -154,7 +153,7 @@ export const deleteFile = async (fileId: string): Promise<boolean> => {
   const versionsCollection = db.collection<VersionDocument>(collections.versions);
   
   // Delete file
-  const result = await filesCollection.deleteOne({ _id: new ObjectId(fileId) });
+  const result = await filesCollection.deleteOne({ _id: fileId });
   
   // Delete all versions
   await versionsCollection.deleteMany({ fileId });

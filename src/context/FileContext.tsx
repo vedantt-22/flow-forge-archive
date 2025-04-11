@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
 // Define the version type
@@ -175,8 +174,6 @@ export const FileProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Add the new file to the files array
         setFiles(prevFiles => [newFile, ...prevFiles]);
-        
-        // If we're running with MongoDB in the future, we would do the actual file upload here
         
         resolve();
       } catch (error) {

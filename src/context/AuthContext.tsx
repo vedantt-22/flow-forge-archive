@@ -1,8 +1,13 @@
 
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { loginUser, registerUser, getUserById, verifyToken } from '@/lib/auth-service';
-import { UserDocument } from '@/lib/mongodb';
+
+interface UserDocument {
+  _id?: string;
+  email: string;
+  fullName: string;
+  avatarUrl?: string;
+}
 
 interface AuthContextType {
   user: UserDocument | null;
@@ -19,32 +24,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Simulated users for demo purposes
+  const demoUsers = [
+    {
+      _id: '1',
+      email: 'demo@example.com',
+      password: 'password',
+      fullName: 'Demo User',
+    },
+    {
+      _id: '2',
+      email: 'admin@example.com',
+      password: 'password',
+      fullName: 'Admin User',
+    }
+  ];
+
   useEffect(() => {
     const checkAuth = async () => {
       setIsLoading(true);
       
       try {
-        // Check for token in localStorage
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setIsLoading(false);
-          return;
-        }
-        
-        // Verify token
-        const { userId } = verifyToken(token);
-        
-        // Get user data
-        const userData = await getUserById(userId);
-        if (userData) {
-          setUser(userData);
-        } else {
-          // Invalid user ID or user not found, clear token
-          localStorage.removeItem('token');
+        // Check for stored user in localStorage
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser({
+            _id: userData._id,
+            email: userData.email,
+            fullName: userData.fullName,
+            avatarUrl: userData.avatarUrl
+          });
         }
       } catch (error) {
-        // Invalid token, clear it
-        localStorage.removeItem('token');
+        // Invalid user data, clear storage
+        localStorage.removeItem('user');
         console.error('Auth check error:', error);
       } finally {
         setIsLoading(false);
@@ -56,10 +70,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { user: userData, token } = await loginUser(email, password);
+      // Find user in demo data
+      const foundUser = demoUsers.find(u => u.email === email && u.password === password);
       
-      // Store token
-      localStorage.setItem('token', token);
+      if (!foundUser) {
+        throw new Error('Invalid email or password');
+      }
+      
+      const userData = {
+        _id: foundUser._id,
+        email: foundUser.email,
+        fullName: foundUser.fullName,
+        avatarUrl: '' // No avatar in demo
+      };
+      
+      // Store user data
+      localStorage.setItem('user', JSON.stringify(userData));
       
       // Set user
       setUser(userData);
@@ -81,7 +107,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      await registerUser(email, password, fullName);
+      // Check if user already exists
+      if (demoUsers.some(u => u.email === email)) {
+        throw new Error('Email already in use');
+      }
+      
+      // In a real app, we would create a new user in the database
+      // For this demo, we'll just simulate success
       
       toast({
         title: "Account created",
@@ -100,10 +132,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signOut = async () => {
     try {
-      // Clear token
-      localStorage.removeItem('token');
+      // Clear stored user data
+      localStorage.removeItem('user');
       
-      // Clear user
+      // Clear user state
       setUser(null);
       
       toast({

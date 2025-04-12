@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { useFileContext, FileType } from '@/context/FileContext';
+import { useFileContext } from '@/context/FileContext';
+import { FileDocument } from '@/lib/types';
 import { 
   MoreHorizontal, 
   Star, 
@@ -52,12 +53,14 @@ const formatDate = (date: Date): string => {
   });
 };
 
-const FileListItem: React.FC<{ file: FileType }> = ({ file }) => {
+const FileListItem: React.FC<{ file: FileDocument }> = ({ file }) => {
   const { selectFile, toggleFavorite, deleteFile } = useFileContext();
 
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleFavorite(file.id);
+    if (file._id) {
+      toggleFavorite(file._id);
+    }
   };
 
   return (
@@ -78,7 +81,7 @@ const FileListItem: React.FC<{ file: FileType }> = ({ file }) => {
             <span>{formatFileSize(file.size)}</span>
             <span className="mx-1.5">•</span>
             <Calendar className="h-3 w-3 mr-1" />
-            <span>{formatDate(file.modified)}</span>
+            <span>{formatDate(file.modified || file.updatedAt)}</span>
             {file.shared && (
               <>
                 <span className="mx-1.5">•</span>
@@ -114,7 +117,9 @@ const FileListItem: React.FC<{ file: FileType }> = ({ file }) => {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => {
                 e.stopPropagation();
-                toggleFavorite(file.id);
+                if (file._id) {
+                  toggleFavorite(file._id);
+                }
               }}>
                 {file.favorite ? 'Remove from Favorites' : 'Add to Favorites'}
               </DropdownMenuItem>
@@ -128,7 +133,9 @@ const FileListItem: React.FC<{ file: FileType }> = ({ file }) => {
               <DropdownMenuItem 
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteFile(file.id);
+                  if (file._id) {
+                    deleteFile(file._id);
+                  }
                 }}
                 className="text-red-600 focus:text-red-600"
               >
@@ -150,7 +157,7 @@ const FileList: React.FC = () => {
       <h2 className="text-lg font-semibold mb-4">Recent Files</h2>
       <div className="space-y-1">
         {files.map(file => (
-          <FileListItem key={file.id} file={file} />
+          <FileListItem key={file._id} file={file} />
         ))}
       </div>
     </div>

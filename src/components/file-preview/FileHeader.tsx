@@ -2,12 +2,12 @@
 import React from 'react';
 import { Download, Share, Trash } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { FileType } from '@/context/FileContext';
+import { FileDocument } from '@/lib/types';
 import { getFileIcon, formatFileSize, formatDate } from '@/utils/file-helpers';
 import { useToast } from "@/hooks/use-toast";
 
 interface FileHeaderProps {
-  file: FileType;
+  file: FileDocument;
   onClose: () => void;
 }
 
@@ -37,7 +37,7 @@ const FileHeader: React.FC<FileHeaderProps> = ({ file, onClose }) => {
           <div className="flex items-center mt-2 text-sm text-gray-500">
             <span>{formatFileSize(file.size)}</span>
             <span className="mx-2">•</span>
-            <span>Last modified {formatDate(file.modified)}</span>
+            <span>Last modified {formatDate(file.modified || file.updatedAt)}</span>
           </div>
           
           <div className="mt-4 flex space-x-2">

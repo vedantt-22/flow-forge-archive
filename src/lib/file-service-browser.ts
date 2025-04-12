@@ -1,6 +1,6 @@
 
 import { browserDb } from './browser-storage';
-import { FileDocument, VersionDocument, collections } from './types';
+import { FileDocument, VersionDocument, collections, CollectionKey } from './types';
 
 // Default pagination values
 const DEFAULT_PAGE_SIZE = 20;
@@ -34,9 +34,9 @@ export const uploadFile = async (file: {
     };
     
     // Get current files and add the new one
-    const files = browserDb.getCollection<FileDocument>(collections.files);
+    const files = browserDb.getCollection<FileDocument>('files' as CollectionKey);
     files.push(newFile);
-    browserDb.saveCollection(collections.files, files);
+    browserDb.saveCollection('files' as CollectionKey, files);
     
     // Create initial version
     const newVersion: VersionDocument = {
@@ -50,9 +50,9 @@ export const uploadFile = async (file: {
     };
     
     // Save version
-    const versions = browserDb.getCollection<VersionDocument>(collections.versions);
+    const versions = browserDb.getCollection<VersionDocument>('versions' as CollectionKey);
     versions.push(newVersion);
-    browserDb.saveCollection(collections.versions, versions);
+    browserDb.saveCollection('versions' as CollectionKey, versions);
     
     return newFile;
   } catch (error) {
@@ -69,7 +69,7 @@ export const getFilesByUserId = async (
   sortOrder = -1
 ): Promise<{ files: FileDocument[], total: number }> => {
   try {
-    const files = browserDb.getCollection<FileDocument>(collections.files);
+    const files = browserDb.getCollection<FileDocument>('files' as CollectionKey);
     
     // Filter files owned by user or shared with user
     const userFiles = files.filter(file => 
@@ -101,7 +101,18 @@ export const getFilesByUserId = async (
     const end = start + pageSize;
     const paginatedFiles = sortedFiles.slice(start, end);
     
-    return { files: paginatedFiles, total: userFiles.length };
+    // Get versions for each file
+    const filesWithVersions = await Promise.all(paginatedFiles.map(async file => {
+      const versions = await getFileVersions(file._id || '');
+      return {
+        ...file,
+        versions,
+        modified: file.updatedAt,
+        creator: "User"  // Placeholder, could be enhanced with actual user lookup
+      };
+    }));
+    
+    return { files: filesWithVersions, total: userFiles.length };
   } catch (error) {
     console.error('Error getting files by user ID:', error);
     return { files: [], total: 0 };
@@ -110,8 +121,21 @@ export const getFilesByUserId = async (
 
 export const getFileById = async (fileId: string): Promise<FileDocument | null> => {
   try {
-    const files = browserDb.getCollection<FileDocument>(collections.files);
-    return files.find(file => file._id === fileId) || null;
+    const files = browserDb.getCollection<FileDocument>('files' as CollectionKey);
+    const file = files.find(file => file._id === fileId);
+    
+    if (file) {
+      // Get versions for the file
+      const versions = await getFileVersions(fileId);
+      return {
+        ...file,
+        versions,
+        modified: file.updatedAt,
+        creator: "User"  // Placeholder
+      };
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error getting file by ID:', error);
     return null;
@@ -120,10 +144,18 @@ export const getFileById = async (fileId: string): Promise<FileDocument | null> 
 
 export const getFileVersions = async (fileId: string): Promise<VersionDocument[]> => {
   try {
-    const versions = browserDb.getCollection<VersionDocument>(collections.versions);
-    return versions
+    const versions = browserDb.getCollection<VersionDocument>('versions' as CollectionKey);
+    const fileVersions = versions
       .filter(version => version.fileId === fileId)
       .sort((a, b) => b.versionNumber - a.versionNumber);
+    
+    // Add properties needed by the UI components
+    return fileVersions.map(version => ({
+      ...version,
+      id: version._id,
+      date: version.createdAt,
+      author: "User"  // Placeholder
+    }));
   } catch (error) {
     console.error('Error getting file versions:', error);
     return [];
@@ -137,7 +169,7 @@ export const addFileVersion = async (
   changes: string
 ): Promise<VersionDocument> => {
   try {
-    const versions = browserDb.getCollection<VersionDocument>(collections.versions);
+    const versions = browserDb.getCollection<VersionDocument>('versions' as CollectionKey);
     
     // Get latest version number
     const fileVersions = versions.filter(v => v.fileId === fileId);
@@ -160,18 +192,23 @@ export const addFileVersion = async (
     
     // Add to versions collection
     versions.push(newVersion);
-    browserDb.saveCollection(collections.versions, versions);
+    browserDb.saveCollection('versions' as CollectionKey, versions);
     
     // Update file's updatedAt
-    const files = browserDb.getCollection<FileDocument>(collections.files);
+    const files = browserDb.getCollection<FileDocument>('files' as CollectionKey);
     const fileIndex = files.findIndex(f => f._id === fileId);
     
     if (fileIndex !== -1) {
       files[fileIndex].updatedAt = new Date();
-      browserDb.saveCollection(collections.files, files);
+      browserDb.saveCollection('files' as CollectionKey, files);
     }
     
-    return newVersion;
+    return {
+      ...newVersion,
+      id: newVersion._id,
+      date: newVersion.createdAt,
+      author: "User"
+    };
   } catch (error) {
     console.error('Error adding file version:', error);
     throw error;
@@ -180,7 +217,7 @@ export const addFileVersion = async (
 
 export const toggleFileFavorite = async (fileId: string): Promise<FileDocument | null> => {
   try {
-    const files = browserDb.getCollection<FileDocument>(collections.files);
+    const files = browserDb.getCollection<FileDocument>('files' as CollectionKey);
     const fileIndex = files.findIndex(f => f._id === fileId);
     
     if (fileIndex === -1) {
@@ -192,9 +229,17 @@ export const toggleFileFavorite = async (fileId: string): Promise<FileDocument |
     files[fileIndex].favorite = !currentStatus;
     
     // Save changes
-    browserDb.saveCollection(collections.files, files);
+    browserDb.saveCollection('files' as CollectionKey, files);
     
-    return files[fileIndex];
+    // Get versions for the file
+    const versions = await getFileVersions(fileId);
+    
+    return {
+      ...files[fileIndex],
+      versions,
+      modified: files[fileIndex].updatedAt,
+      creator: "User"  // Placeholder
+    };
   } catch (error) {
     console.error('Error toggling file favorite:', error);
     return null;
@@ -204,14 +249,14 @@ export const toggleFileFavorite = async (fileId: string): Promise<FileDocument |
 export const deleteFile = async (fileId: string): Promise<boolean> => {
   try {
     // Delete file
-    const files = browserDb.getCollection<FileDocument>(collections.files);
+    const files = browserDb.getCollection<FileDocument>('files' as CollectionKey);
     const newFiles = files.filter(f => f._id !== fileId);
-    browserDb.saveCollection(collections.files, newFiles);
+    browserDb.saveCollection('files' as CollectionKey, newFiles);
     
     // Delete versions
-    const versions = browserDb.getCollection<VersionDocument>(collections.versions);
+    const versions = browserDb.getCollection<VersionDocument>('versions' as CollectionKey);
     const newVersions = versions.filter(v => v.fileId !== fileId);
-    browserDb.saveCollection(collections.versions, newVersions);
+    browserDb.saveCollection('versions' as CollectionKey, newVersions);
     
     return true;
   } catch (error) {
@@ -224,14 +269,14 @@ export const deleteFile = async (fileId: string): Promise<boolean> => {
 export const bulkDeleteFiles = async (fileIds: string[]): Promise<number> => {
   try {
     // Delete files
-    const files = browserDb.getCollection<FileDocument>(collections.files);
+    const files = browserDb.getCollection<FileDocument>('files' as CollectionKey);
     const newFiles = files.filter(f => !fileIds.includes(f._id || ''));
-    browserDb.saveCollection(collections.files, newFiles);
+    browserDb.saveCollection('files' as CollectionKey, newFiles);
     
     // Delete versions
-    const versions = browserDb.getCollection<VersionDocument>(collections.versions);
+    const versions = browserDb.getCollection<VersionDocument>('versions' as CollectionKey);
     const newVersions = versions.filter(v => !fileIds.includes(v.fileId));
-    browserDb.saveCollection(collections.versions, newVersions);
+    browserDb.saveCollection('versions' as CollectionKey, newVersions);
     
     return files.length - newFiles.length;
   } catch (error) {
@@ -248,7 +293,7 @@ export const searchFiles = async (
   pageSize = DEFAULT_PAGE_SIZE
 ): Promise<{ files: FileDocument[], total: number }> => {
   try {
-    const files = browserDb.getCollection<FileDocument>(collections.files);
+    const files = browserDb.getCollection<FileDocument>('files' as CollectionKey);
     const searchTermLower = searchTerm.toLowerCase();
     
     // Filter by user and search term

@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { VersionType } from '@/context/FileContext';
+import { VersionDocument } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from 'lucide-react';
 
 interface VersionHistoryProps {
-  versions: VersionType[];
+  versions: VersionDocument[];
   fileName: string;
 }
 
@@ -35,7 +35,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ versions, fileName }) =
       <div className="space-y-4">
         {sortedVersions.map((version, index) => (
           <div 
-            key={version.id} 
+            key={version._id} 
             className={`
               relative flex items-start p-4 rounded-lg border
               ${index === 0 ? 'bg-fileflow-50 border-fileflow-200 dark:bg-fileflow-900/10 dark:border-fileflow-800/30' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}
@@ -57,7 +57,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ versions, fileName }) =
                     {index === 0 ? 'Current Version' : `Version ${version.versionNumber}`}
                   </h4>
                   <div className="mt-1 text-xs text-gray-500">
-                    {formatDate(version.date)} by {version.author}
+                    {formatDate(version.date || version.createdAt)} by {version.author || version.createdBy}
                   </div>
                 </div>
                 

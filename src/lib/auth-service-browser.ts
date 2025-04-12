@@ -1,6 +1,6 @@
 
 import { browserDb } from './browser-storage';
-import { UserDocument, collections } from './types';
+import { UserDocument, collections, CollectionKey } from './types';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -14,7 +14,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
 export const registerUser = async (email: string, password: string, fullName: string): Promise<UserDocument> => {
   // Get current users
-  const users = browserDb.getCollection<UserDocument>(collections.users);
+  const users = browserDb.getCollection<UserDocument>('users' as CollectionKey);
   
   // Check if user exists with case-insensitive email comparison
   const existingUser = users.find(u => 
@@ -39,7 +39,7 @@ export const registerUser = async (email: string, password: string, fullName: st
   
   // Add user to collection
   users.push(newUser);
-  browserDb.saveCollection(collections.users, users);
+  browserDb.saveCollection('users' as CollectionKey, users);
   
   // Return user (without password)
   const userWithoutPassword = { ...newUser };
@@ -50,7 +50,7 @@ export const registerUser = async (email: string, password: string, fullName: st
 
 export const loginUser = async (email: string, password: string): Promise<{ user: UserDocument, token: string }> => {
   // Get users
-  const users = browserDb.getCollection<UserDocument>(collections.users);
+  const users = browserDb.getCollection<UserDocument>('users' as CollectionKey);
   
   // Find user with case-insensitive search
   const user = users.find(u => 
@@ -101,7 +101,7 @@ export const getUserById = async (id: string): Promise<UserDocument | null> => {
   }
   
   // If not in cache or expired, fetch from storage
-  const users = browserDb.getCollection<UserDocument>(collections.users);
+  const users = browserDb.getCollection<UserDocument>('users' as CollectionKey);
   
   // Find user
   const user = users.find(u => u._id === id);

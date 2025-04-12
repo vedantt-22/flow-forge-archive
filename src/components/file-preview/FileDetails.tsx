@@ -2,10 +2,10 @@
 import React from 'react';
 import { formatFileSize, formatDate } from '@/utils/file-helpers';
 import { User, Calendar } from 'lucide-react';
-import { FileType } from '@/context/FileContext';
+import { FileDocument } from '@/lib/types';
 
 interface FileDetailsProps {
-  file: FileType;
+  file: FileDocument;
 }
 
 const FileDetails: React.FC<FileDetailsProps> = ({ file }) => {
@@ -26,14 +26,14 @@ const FileDetails: React.FC<FileDetailsProps> = ({ file }) => {
             <div className="w-1/3 text-sm text-gray-500">Created By</div>
             <div className="w-2/3 text-sm flex items-center">
               <User className="h-4 w-4 mr-1 text-gray-400" />
-              {file.creator}
+              {file.creator || "User"}
             </div>
           </div>
           <div className="flex">
             <div className="w-1/3 text-sm text-gray-500">Modified</div>
             <div className="w-2/3 text-sm flex items-center">
               <Calendar className="h-4 w-4 mr-1 text-gray-400" />
-              {formatDate(file.modified)}
+              {formatDate(file.modified || file.updatedAt)}
             </div>
           </div>
         </div>

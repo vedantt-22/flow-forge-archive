@@ -1,6 +1,6 @@
 
 // Mock database using localStorage for client-side storage
-import { FileDocument, VersionDocument, UserDocument } from './types';
+import { FileDocument, VersionDocument, UserDocument, collections } from './types';
 
 // Generate a random ID to mimic MongoDB ObjectId
 const generateId = (): string => {
@@ -48,7 +48,7 @@ const getCollection = <T>(collectionName: keyof Collections): T[] => {
     }
     
     const parsedData = JSON.parse(data) as Collections;
-    return parsedData[collectionName] as T[];
+    return parsedData[collectionName] as unknown as T[];
   } catch (error) {
     console.error(`Error getting collection ${collectionName}`, error);
     return [];
@@ -61,13 +61,13 @@ const saveCollection = <T>(collectionName: keyof Collections, items: T[]): void 
     const data = localStorage.getItem('fileflow-data');
     if (!data) {
       const newData: Partial<Collections> = {};
-      newData[collectionName] = items;
+      newData[collectionName] = items as any;
       localStorage.setItem('fileflow-data', JSON.stringify(newData));
       return;
     }
     
     const parsedData = JSON.parse(data) as Collections;
-    parsedData[collectionName] = items as any[];
+    parsedData[collectionName] = items as any;
     localStorage.setItem('fileflow-data', JSON.stringify(parsedData));
   } catch (error) {
     console.error(`Error saving collection ${collectionName}`, error);

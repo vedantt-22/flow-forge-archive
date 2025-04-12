@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFileContext } from '@/context/FileContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VersionHistory from './VersionHistory';
@@ -7,9 +7,23 @@ import FileHeader from './file-preview/FileHeader';
 import FileDetails from './file-preview/FileDetails';
 import FileContentPreview from './file-preview/FileContentPreview';
 import EmptyFilePreview from './file-preview/EmptyFilePreview';
+import * as fileService from '@/lib/file-service-browser';
+import { VersionDocument } from '@/lib/types';
 
 const FilePreview: React.FC = () => {
   const { selectedFile, selectFile } = useFileContext();
+  const [fileVersions, setFileVersions] = useState<VersionDocument[]>([]);
+  
+  useEffect(() => {
+    const loadVersions = async () => {
+      if (selectedFile?._id) {
+        const versions = await fileService.getFileVersions(selectedFile._id);
+        setFileVersions(versions);
+      }
+    };
+    
+    loadVersions();
+  }, [selectedFile]);
   
   if (!selectedFile) {
     return <EmptyFilePreview />;
@@ -34,7 +48,7 @@ const FilePreview: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="versions" className="p-6">
-            <VersionHistory versions={selectedFile.versions} fileName={selectedFile.name} />
+            <VersionHistory versions={fileVersions} fileName={selectedFile.name} />
           </TabsContent>
           
           <TabsContent value="preview">

@@ -23,6 +23,10 @@ export type FileDocument = {
   sharedWith: string[];
   favorite: boolean;
   tags: string[];
+  // Additional properties needed by components
+  versions?: VersionDocument[];
+  creator?: string;
+  modified?: Date;
 };
 
 export type VersionDocument = {
@@ -33,6 +37,10 @@ export type VersionDocument = {
   createdBy: string;
   changes: string;
   storagePath: string;
+  // Additional properties needed by components
+  date?: Date;
+  author?: string;
+  id?: string;
 };
 
 // Define collection names as constants
@@ -40,4 +48,7 @@ export const collections = {
   users: "users",
   files: "files",
   versions: "versions"
-};
+} as const;
+
+// Export the collections type for type safety
+export type CollectionKey = keyof typeof collections;

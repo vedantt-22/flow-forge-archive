@@ -1,4 +1,3 @@
-
 import { connectDB, collections, FileDocument, VersionDocument } from './mongodb';
 import { ObjectId, MongoClient } from 'mongodb';
 
@@ -26,7 +25,7 @@ export const uploadFile = async (file: {
   
   try {
     // Use transactions for data integrity
-    await session.withTransaction(async () => {
+    const result = await session.withTransaction(async () => {
       const filesCollection = db.collection<FileDocument>(collections.files);
       const versionsCollection = db.collection<VersionDocument>(collections.versions);
       
@@ -66,6 +65,8 @@ export const uploadFile = async (file: {
       // Return the new file with its ID
       return { ...newFile, _id: fileId };
     });
+    
+    return result as FileDocument;
   } finally {
     await session.endSession();
   }
@@ -92,9 +93,9 @@ export const getFilesByUserId = async (
   // Count total documents for pagination info
   const total = await filesCollection.countDocuments(query);
   
-  // Get paginated results
+  // Get paginated results with properly typed sort object
   const files = await filesCollection.find(query)
-    .sort({ [sortBy]: sortOrder })
+    .sort({ [sortBy]: sortOrder } as Record<string, 1 | -1>)
     .skip((page - 1) * pageSize)
     .limit(pageSize)
     .toArray();

@@ -1,8 +1,8 @@
 
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { loginUser, registerUser, getUserById, verifyToken } from '@/lib/auth-service';
-import { UserDocument } from '@/lib/mongodb';
+import { loginUser, registerUser, getUserById, verifyToken } from '@/lib/auth-service-browser';
+import { UserDocument } from '@/lib/types';
 
 interface AuthContextType {
   user: UserDocument | null;

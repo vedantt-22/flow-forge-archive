@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { loginUser, registerUser, getUserById, verifyToken } from '@/lib/auth-service';
 import { UserDocument } from '@/lib/mongodb';
@@ -14,52 +14,83 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Create a localStorage wrapper with error handling
+const storage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error('Error setting localStorage:', error);
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error('Error removing from localStorage:', error);
+    }
+  }
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      setIsLoading(true);
-      
-      try {
-        // Check for token in localStorage
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setIsLoading(false);
-          return;
-        }
-        
-        // Verify token
-        const { userId } = verifyToken(token);
-        
-        // Get user data
-        const userData = await getUserById(userId);
-        if (userData) {
-          setUser(userData);
-        } else {
-          // Invalid user ID or user not found, clear token
-          localStorage.removeItem('token');
-        }
-      } catch (error) {
-        // Invalid token, clear it
-        localStorage.removeItem('token');
-        console.error('Auth check error:', error);
-      } finally {
-        setIsLoading(false);
+  
+  // Memoized token check function
+  const checkAuth = useCallback(async () => {
+    setIsLoading(true);
+    
+    try {
+      // Check for token in localStorage
+      const token = storage.getItem('token');
+      if (!token) {
+        return false;
       }
-    };
-
-    checkAuth();
+      
+      // Verify token
+      const { userId } = verifyToken(token);
+      
+      // Get user data
+      const userData = await getUserById(userId);
+      if (userData) {
+        setUser(userData);
+        return true;
+      } else {
+        // Invalid user ID or user not found, clear token
+        storage.removeItem('token');
+        return false;
+      }
+    } catch (error) {
+      // Invalid token, clear it
+      storage.removeItem('token');
+      console.error('Auth check error:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  // Perform auth check on mount
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  // Handle sign in with optimized error handling
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { user: userData, token } = await loginUser(email, password);
       
       // Store token
-      localStorage.setItem('token', token);
+      storage.setItem('token', token);
       
       // Set user
       setUser(userData);
@@ -77,9 +108,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       throw error;
     }
-  };
+  }, [toast]);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  // Handle sign up with optimized error handling
+  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
     try {
       await registerUser(email, password, fullName);
       
@@ -96,12 +128,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       throw error;
     }
-  };
+  }, [toast]);
 
-  const signOut = async () => {
+  // Handle sign out
+  const signOut = useCallback(async () => {
     try {
       // Clear token
-      localStorage.removeItem('token');
+      storage.removeItem('token');
       
       // Clear user
       setUser(null);
@@ -119,18 +152,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       throw error;
     }
-  };
+  }, [toast]);
+
+  // Memoize the context value to prevent unnecessary rerenders
+  const contextValue = useMemo(() => ({
+    user,
+    isLoading,
+    signIn,
+    signUp,
+    signOut,
+  }), [user, isLoading, signIn, signUp, signOut]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        signIn,
-        signUp,
-        signOut,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,23 +4,31 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 // This should be in an environment variable
-const JWT_SECRET = "your_jwt_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+const JWT_EXPIRY = '7d';
+
+// Cache for user data to reduce database queries
+const userCache = new Map<string, {user: UserDocument, expiry: number}>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
 export const registerUser = async (email: string, password: string, fullName: string): Promise<UserDocument> => {
   const db = await connectDB();
   const usersCollection = db.collection<UserDocument>(collections.users);
   
-  // Check if user exists
-  const existingUser = await usersCollection.findOne({ email });
+  // Check if user exists with case-insensitive email comparison
+  const existingUser = await usersCollection.findOne({ 
+    email: { $regex: new RegExp(`^${email}$`, 'i') } 
+  });
+  
   if (existingUser) {
     throw new Error("User already exists");
   }
   
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password, 10);
+  // Hash password with optimal work factor
+  const hashedPassword = await bcrypt.hash(password, 12);
   
   const newUser: UserDocument = {
-    email,
+    email: email.toLowerCase(), // Store emails in lowercase for consistency
     password: hashedPassword,
     fullName,
     createdAt: new Date(),
@@ -41,8 +49,11 @@ export const loginUser = async (email: string, password: string): Promise<{ user
   const db = await connectDB();
   const usersCollection = db.collection<UserDocument>(collections.users);
   
-  // Find user
-  const user = await usersCollection.findOne({ email });
+  // Find user with case-insensitive search
+  const user = await usersCollection.findOne({ 
+    email: { $regex: new RegExp(`^${email}$`, 'i') } 
+  });
+  
   if (!user) {
     throw new Error("Invalid email or password");
   }
@@ -53,21 +64,40 @@ export const loginUser = async (email: string, password: string): Promise<{ user
     throw new Error("Invalid email or password");
   }
   
-  // Create token
+  // Create token with appropriate claims
   const token = jwt.sign(
-    { userId: user._id, email: user.email }, 
+    { 
+      userId: user._id, 
+      email: user.email,
+      fullName: user.fullName
+    }, 
     JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: JWT_EXPIRY }
   );
   
   // Return user (without password) and token
   const userWithoutPassword = { ...user };
   delete userWithoutPassword.password;
   
+  // Cache the user
+  if (user._id) {
+    userCache.set(user._id.toString(), {
+      user: userWithoutPassword,
+      expiry: Date.now() + CACHE_TTL
+    });
+  }
+  
   return { user: userWithoutPassword, token };
 };
 
 export const getUserById = async (id: string): Promise<UserDocument | null> => {
+  // Check cache first
+  const cachedUser = userCache.get(id);
+  if (cachedUser && cachedUser.expiry > Date.now()) {
+    return cachedUser.user;
+  }
+  
+  // If not in cache or expired, fetch from DB
   const db = await connectDB();
   const usersCollection = db.collection<UserDocument>(collections.users);
   
@@ -81,6 +111,12 @@ export const getUserById = async (id: string): Promise<UserDocument | null> => {
   const userWithoutPassword = { ...user };
   delete userWithoutPassword.password;
   
+  // Update cache
+  userCache.set(id, {
+    user: userWithoutPassword,
+    expiry: Date.now() + CACHE_TTL
+  });
+  
   return userWithoutPassword;
 };
 
@@ -92,3 +128,13 @@ export const verifyToken = (token: string): { userId: string, email: string } =>
     throw new Error("Invalid token");
   }
 };
+
+// Clear expired entries from cache periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of userCache.entries()) {
+    if (value.expiry < now) {
+      userCache.delete(key);
+    }
+  }
+}, CACHE_TTL);

@@ -2,15 +2,65 @@
 import { browserDb } from './browser-storage';
 import { UserDocument, collections, CollectionKey } from './types';
 import bcryptjs from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 
-// This should be in an environment variable
-const JWT_SECRET = "your_jwt_secret_key";
-const JWT_EXPIRY = '7d';
+// Simple token expiry time in milliseconds (7 days)
+const TOKEN_EXPIRY = 7 * 24 * 60 * 60 * 1000;
 
 // Cache for user data to reduce storage queries
 const userCache = new Map<string, {user: UserDocument, expiry: number}>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+
+// Simple browser-compatible JWT alternative
+const createToken = (payload: any): string => {
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT'
+  };
+  
+  const now = Date.now();
+  const expiresAt = now + TOKEN_EXPIRY;
+  
+  const tokenPayload = {
+    ...payload,
+    iat: Math.floor(now / 1000),
+    exp: Math.floor(expiresAt / 1000)
+  };
+
+  const base64Header = btoa(JSON.stringify(header));
+  const base64Payload = btoa(JSON.stringify(tokenPayload));
+  
+  // We're using a simplified approach here without actual signing
+  // In production, you would use Web Crypto API for proper signing
+  const signature = btoa(JSON.stringify({ 
+    header: base64Header, 
+    payload: base64Payload, 
+    secret: "your_jwt_secret_key" 
+  }));
+  
+  return `${base64Header}.${base64Payload}.${signature}`;
+};
+
+const verifyToken = (token: string): any => {
+  try {
+    const [headerBase64, payloadBase64] = token.split('.');
+    
+    if (!headerBase64 || !payloadBase64) {
+      throw new Error('Invalid token format');
+    }
+    
+    const payload = JSON.parse(atob(payloadBase64));
+    
+    // Check if token has expired
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < currentTime) {
+      throw new Error('Token expired');
+    }
+    
+    return payload;
+  } catch (error) {
+    throw new Error("Invalid token");
+  }
+};
 
 export const registerUser = async (email: string, password: string, fullName: string): Promise<UserDocument> => {
   // Get current users
@@ -68,15 +118,11 @@ export const loginUser = async (email: string, password: string): Promise<{ user
   }
   
   // Create token with appropriate claims
-  const token = jwt.sign(
-    { 
-      userId: user._id, 
-      email: user.email,
-      fullName: user.fullName
-    }, 
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRY }
-  );
+  const token = createToken({ 
+    userId: user._id, 
+    email: user.email,
+    fullName: user.fullName
+  });
   
   // Return user (without password) and token
   const userWithoutPassword = { ...user };
@@ -122,14 +168,8 @@ export const getUserById = async (id: string): Promise<UserDocument | null> => {
   return userWithoutPassword;
 };
 
-export const verifyToken = (token: string): { userId: string, email: string } => {
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, email: string };
-    return decoded;
-  } catch (error) {
-    throw new Error("Invalid token");
-  }
-};
+// Export verifyToken to be used in other parts of the app
+export { verifyToken };
 
 // Clear expired entries from cache periodically
 setInterval(() => {

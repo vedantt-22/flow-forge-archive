@@ -1,73 +1,111 @@
-# Welcome to your Lovable project
+# 📦 FLOW-FORGE-ARCHIVE
 
-## Project info
+**Empower Creativity. Simplify Management. Accelerate Innovation.**
 
-**URL**: https://lovable.dev/projects/94e9f947-687f-40c7-9d5d-098b9d67a4e4
+![Vue](https://img.shields.io/badge/Vue-3.0.0-brightgreen?style=flat-square)
+![TypeScript](https://img.shields.io/badge/TypeScript-4.x-blue?style=flat-square)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-^3.x-38B2AC?style=flat-square)
+![MongoDB](https://img.shields.io/badge/MongoDB-6.x-47A248?style=flat-square)
+![License](https://img.shields.io/github/license/vedantt-22/flow-forge-archive?style=flat-square)
 
-## How can I edit this code?
+> Built with the tools and technologies: Vue.js · TypeScript · TailwindCSS · Node.js · MongoDB
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 📚 Table of Contents
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/94e9f947-687f-40c7-9d5d-098b9d67a4e4) and start prompting.
+* [Overview](#overview)
+* [Getting Started](#getting-started)
 
-Changes made via Lovable will be committed automatically to this repo.
+  * [Prerequisites](#prerequisites)
+  * [Installation](#installation)
+* [Usage](#usage)
+* [Testing](#testing)
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🔍 Overview
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+**flow-forge-archive** is a versatile developer toolkit designed to accelerate the development of modern web applications. It combines a robust UI component library, streamlined workflows, and integrated file and user management to help developers build scalable, maintainable frontends with ease.
 
-Follow these steps:
+### 🔑 Core Features
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+* 🔧 **Customizable UI Components**
+  Modular, reusable UI components built with Vue 3, TailwindCSS, and TypeScript.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+* ⚡ **Fast Development Environment**
+  Powered by modern tooling, supports hot module replacement and efficient iteration cycles.
 
-# Step 3: Install the necessary dependencies.
-npm i
+* 🔐 **Secure User Authentication**
+  Includes simplified JWT-based login, registration, and user management.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+* 🗂 **Efficient File Handling**
+  Integrated file previews, metadata handling, and MongoDB-based storage.
+
+* 🧩 **Modular Architecture**
+  Component-based organization ensures scalability and maintainability.
+
+* 🧠 **Developer Focused**
+  Streamlined CLI workflows, easy project setup, and clear configuration management.
+
+---
+
+## 🚀 Getting Started
+
+### ✅ Prerequisites
+
+Ensure you have the following tools installed:
+
+* **Programming Language**: [TypeScript](https://www.typescriptlang.org/)
+* **Framework**: [Vue 3](https://vuejs.org/)
+* **Package Manager**: `npm` or `yarn`
+
+---
+
+### 🔧 Installation
+
+Follow these steps to clone and set up the project locally:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/vedantt-22/flow-forge-archive
+
+# 2. Navigate to the project directory
+cd flow-forge-archive
+
+# 3. Install dependencies
+npm install
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## ▶️ Usage
 
-**Use GitHub Codespaces**
+```bash
+# Run the development server
+npm run dev
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Build for production
+npm run build
+```
 
-## What technologies are used for this project?
+Access the app in your browser at `http://localhost:3000`
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🧪 Testing
 
-## How can I deploy this project?
+```bash
+# Run unit tests
+npm run test
+```
 
-Simply open [Lovable](https://lovable.dev/projects/94e9f947-687f-40c7-9d5d-098b9d67a4e4) and click on Share -> Publish.
+Testing uses [Jest](https://jestjs.io/) and [Vue Test Utils](https://test-utils.vuejs.org/).
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes it is!
+## 📂 License
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Licensed under the [MIT License](https://github.com/vedantt-22/flow-forge-archive/blob/main/LICENSE).
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
